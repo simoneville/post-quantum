@@ -44,7 +44,6 @@ def BitRev(x):
 
 
 def PolyBitRev(s):
-    """disable this to remove complexity while debugging"""
     return [s[BitRev(i)] for i in range(n)]
 
 
@@ -88,11 +87,13 @@ def _slowNTTinv(vec_hat):
 
 
 def NTT(vec):
-    return sympy.ntt(vec, prime=q)
+    return _slowNTT(vec)
+    #return sympy.ntt(vec, prime=q)
 
 
 def NTTinv(vec_hat):
-    return sympy.intt(vec_hat, prime=q)
+    return _slowNTTinv(vec_hat)
+    #return sympy.intt(vec_hat, prime=q)
 
 
 def EncodePolynomial(s_hat):
@@ -300,12 +301,10 @@ def newhope_cca_kem_encaps(pk):
 def newhope_cca_kem_decaps(c_bar, sk_bar):
     c, d = c_bar[:3*n//8 + 7*n//4], c_bar[3*n//8 + 7*n//4:]
     sk, pk, h, s = sk_bar[:7*n//4], sk_bar[7*n // 4: 7*n //
-                                           2], sk_bar[7*n//2:7*n//2 + 32], sk_bar[7*n//2 + 32:]
+                                           2 + 32], sk_bar[7*n//2 + 32:7*n//2 + 64], sk_bar[7*n//2 + 64:]
     mup = newhope_cpa_pke_decryption(c, sk)
     buf = shake256(96, b"\x08"+mup+h)
     Kp, coinpp, dp = buf[:32], buf[32:64], buf[64:]
-    print(c, newhope_cpa_pke_encryption(pk, mup, coinpp))
-    print(d, dp)
     if c == newhope_cpa_pke_encryption(pk, mup, coinpp) and d == dp:
         fail = 0
     else:
@@ -317,20 +316,20 @@ def newhope_cca_kem_decaps(c_bar, sk_bar):
 
 
 if __name__ == "__main__":
-    
+
     pk, sk_bar = newhope_cca_kem_keygen()
     c_bar, ss = newhope_cca_kem_encaps(pk)
     ssp = newhope_cca_kem_decaps(c_bar, sk_bar)
-    print(ss, ssp)
-    
+    print(ss == ssp)
+
     pk, sk = newhope_cpa_kem_keygen()
     c, ss = newhope_cpa_kem_encaps(pk)
     ssp = newhope_cpa_kem_decaps(c, sk)
-    print(ss, ssp)
-    
+    print(ss == ssp)
+
     mu = bytes(range(32))
     coin = b""
     pk, sk = newhope_cpa_pke_keygen()
     c = newhope_cpa_pke_encryption(pk, mu, coin)
     mup = newhope_cpa_pke_decryption(c, sk)
-    print(mu, mup)
+    print(mu == mup)

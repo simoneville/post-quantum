@@ -1,5 +1,5 @@
-import newHope
 import unittest
+import newHope
 import random
 
 
@@ -94,7 +94,6 @@ class TestEncoding(unittest.TestCase):
         self.assertEqual(x, newHope.Decode(newHope.Encode(x)))
 
     def test_c_codec(self):
-        # TODO
         u_hat = list(range(1024))
         h = bytes(i % 256 for i in range(1024))
         self.assertEqual((u_hat, h), newHope.DecodeC(
