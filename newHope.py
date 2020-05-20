@@ -40,7 +40,9 @@ def BitRev(x):
 
 
 def PolyBitRev(s):
-    return [s[BitRev(i)] for i in range(n)]
+    """disable this to remove complexity while debugging"""
+    return s
+    # return [s[BitRev(i)] for i in range(n)]
 
 
 def GenA(seed):
@@ -54,7 +56,7 @@ def GenA(seed):
             while j < 168 and ctr < 64:
                 val = buf[j] + buf[j+1] << 8
                 if val < 5 * q:
-                    a_hat[i * 64 + ctr] = val
+                    a_hat[i * 64 + ctr] = val % q
                     ctr += 1
                 j += 2
     return a_hat
@@ -166,8 +168,11 @@ def Decode(v):
             t = t-q
         else:
             t = t - (q//2)
+        print(t//q, end=" ")
         t = abs(t >> 15)
+        #print(t, end=" ")
         mu[i >> 3] = mu[i >> 3] | (t << (i & 7)) & 0xff
+    print(mu)
     return bytes(mu)
 
 
@@ -206,6 +211,10 @@ def Decompress(a):
     return r
 
 
+def ntt_mult_add(x, y, z):
+    return [(a * sh + e) % q for (a, sh, e) in zip(x, y, z)]
+
+
 def newhope_cpa_pke_keygen():
     seed = urandom(32)
     z = shake256(64, b"\x01"+seed)
@@ -216,7 +225,8 @@ def newhope_cpa_pke_keygen():
     s_hat = NTT(s)
     e = PolyBitRev(Sample(noise_seed, 1))
     e_hat = NTT(e)
-    b_hat = [(a * s + e) % q for (a, s, e) in zip(a_hat, s_hat, e_hat)]
+    b_hat = ntt_mult_add(a_hat, s_hat, e_hat)
+    # b_hat = [(a * sh + e) % q for (a, sh, e) in zip(a_hat, s_hat, e_hat)]
     pk = EncodePK(b_hat, public_seed)
     sk = EncodePolynomial(s_hat)
     return pk, sk
@@ -229,10 +239,13 @@ def newhope_cpa_pke_encryption(pk, mu, coin):
     ep = PolyBitRev(Sample(coin, 1))
     epp = Sample(coin, 2)
     t_hat = NTT(sp)
-    u_hat = [(a * t + e) % q for (a, t, e) in zip(a_hat, t_hat, NTT(ep))]
+    u_hat = ntt_mult_add(a_hat, t_hat, NTT(ep))
+    # u_hat = [(a * t + e) % q for (a, t, e) in zip(a_hat, t_hat, NTT(ep))]
     v = Encode(mu)
+    print("v: {}".format(v))
     vp = [(a + e + vv) % q for (a, e, vv)
           in zip(NTTinv([(b * t) % q for (b, t) in zip(b_hat, t_hat)]), epp, v)]
+    #print("vp:{}".format(vp))
     h = Compress(vp)
     c = EncodeC(u_hat, h)
     return c
@@ -242,6 +255,9 @@ def newhope_cpa_pke_decryption(c, sk):
     u_hat, h = DecodeC(c)
     s_hat = DecodePolynomial(sk)
     vp = Decompress(h)
+    #print("vp:{}".format(vp))
+    v=[(v - us)%q for (v, us) in zip(vp, NTTinv([u*s for (u, s) in zip(u_hat, s_hat)]))]
+    #print("v: {}".format(v))
     mu = Decode(
         [v - us for (v, us) in zip(vp, NTTinv([u*s for (u, s) in zip(u_hat, s_hat)]))])
     return mu
@@ -320,5 +336,5 @@ if __name__ == "__main__":
     coin = b""
     pk, sk = newhope_cpa_pke_keygen()
     c = newhope_cpa_pke_encryption(pk, mu, coin)
-    mup = newhope_cpa_kem_decaps(c, sk)
+    mup = newhope_cpa_pke_decryption(c, sk)
     print(mu, mup)
