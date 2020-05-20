@@ -317,17 +317,17 @@ def newhope_cca_kem_decaps(c_bar, sk_bar):
 
 
 if __name__ == "__main__":
-    """
+    
     pk, sk_bar = newhope_cca_kem_keygen()
     c_bar, ss = newhope_cca_kem_encaps(pk)
     ssp = newhope_cca_kem_decaps(c_bar, sk_bar)
     print(ss, ssp)
-
+    
     pk, sk = newhope_cpa_kem_keygen()
     c, ss = newhope_cpa_kem_encaps(pk)
     ssp = newhope_cpa_kem_decaps(c, sk)
     print(ss, ssp)
-    """
+    
     mu = bytes(range(32))
     coin = b""
     pk, sk = newhope_cpa_pke_keygen()
