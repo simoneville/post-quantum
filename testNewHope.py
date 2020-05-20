@@ -1,5 +1,6 @@
 import newHope
 import unittest
+import random
 
 
 class TestShake(unittest.TestCase):
@@ -100,9 +101,14 @@ class TestEncoding(unittest.TestCase):
             newHope.EncodeC(u_hat, h)))
 
     def test_comp_decomp(self):
-        vp = [(newHope.q * _ // 16) + i for (_, i)
-              in zip(range(1024), range(1023, -1, -1))]
+        vp = [((newHope.q * _ // 16) + i) % newHope.q for (_, i)
+              in zip(range(0, 1 << 16, 1 << 6), range(1023, -1, -1))]
         h = newHope.Compress(vp)
-        print(h)
         self.assertLessEqual(
-            min([abs(a - b) for (a, b) in zip(vp, newHope.Decompress(h))]), newHope.q//4)
+            max([abs(newHope.minabsmod(a - b)) for (a, b) in zip(vp, newHope.Decompress(h))]), newHope.q//4)
+        v = [random.randint(0, newHope.q - 1) for _ in range(1024)]
+        vp = [v[_] + random.randint(- newHope.q//16, newHope.q//16)
+              for _ in range(1024)]
+        h = newHope.Compress(vp)
+        self.assertLessEqual(
+            max([abs(newHope.minabsmod(a - b)) for (a, b) in zip(vp, newHope.Decompress(h))]), newHope.q//4)

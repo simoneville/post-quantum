@@ -12,6 +12,10 @@ gamma = 7
 omega = 49
 
 
+def minabsmod(a, q=q):
+    return ((a + q//2) % q) - q//2
+
+
 def shake256(length, input):
     """my editor gives error because the type is only conditionally defined"""
     state = shake_256(input)
@@ -41,8 +45,7 @@ def BitRev(x):
 
 def PolyBitRev(s):
     """disable this to remove complexity while debugging"""
-    return s
-    # return [s[BitRev(i)] for i in range(n)]
+    return [s[BitRev(i)] for i in range(n)]
 
 
 def GenA(seed):
@@ -88,8 +91,8 @@ def NTT(vec):
     return sympy.ntt(vec, prime=q)
 
 
-def NTTinv(vec):
-    return sympy.intt(vec, prime=q)
+def NTTinv(vec_hat):
+    return sympy.intt(vec_hat, prime=q)
 
 
 def EncodePolynomial(s_hat):
@@ -168,11 +171,8 @@ def Decode(v):
             t = t-q
         else:
             t = t - (q//2)
-        print(t//q, end=" ")
         t = abs(t >> 15)
-        #print(t, end=" ")
         mu[i >> 3] = mu[i >> 3] | (t << (i & 7)) & 0xff
-    print(mu)
     return bytes(mu)
 
 
@@ -204,7 +204,7 @@ def Decompress(a):
         r[i+4] = (a[k+1] >> 4) & 7
         r[i+5] = (a[k+1] >> 7) | ((a[k+2] << 1) & 6)
         r[i+6] = ((a[k+2] >> 2) & 7)
-        r[i+7] = (a[k+0] >> 5)
+        r[i+7] = (a[k+2] >> 5)
         k = k+3
         for j in range(8):
             r[i+j] = (r[i+j] * q + 4) >> 3
@@ -242,10 +242,8 @@ def newhope_cpa_pke_encryption(pk, mu, coin):
     u_hat = ntt_mult_add(a_hat, t_hat, NTT(ep))
     # u_hat = [(a * t + e) % q for (a, t, e) in zip(a_hat, t_hat, NTT(ep))]
     v = Encode(mu)
-    print("v: {}".format(v))
     vp = [(a + e + vv) % q for (a, e, vv)
           in zip(NTTinv([(b * t) % q for (b, t) in zip(b_hat, t_hat)]), epp, v)]
-    #print("vp:{}".format(vp))
     h = Compress(vp)
     c = EncodeC(u_hat, h)
     return c
@@ -255,11 +253,9 @@ def newhope_cpa_pke_decryption(c, sk):
     u_hat, h = DecodeC(c)
     s_hat = DecodePolynomial(sk)
     vp = Decompress(h)
-    #print("vp:{}".format(vp))
-    v=[(v - us)%q for (v, us) in zip(vp, NTTinv([u*s for (u, s) in zip(u_hat, s_hat)]))]
-    #print("v: {}".format(v))
-    mu = Decode(
-        [v - us for (v, us) in zip(vp, NTTinv([u*s for (u, s) in zip(u_hat, s_hat)]))])
+    v = [(v - us) % q for (v, us) in zip(vp,
+                                         NTTinv([(u*s) % q for (u, s) in zip(u_hat, s_hat)]))]
+    mu = Decode(v)
     return mu
 
 
