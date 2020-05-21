@@ -10,6 +10,7 @@ q = 12289
 k = 8
 gamma = 7
 omega = 49
+FAST = 1
 
 
 def minabsmod(a, q=q):
@@ -44,6 +45,8 @@ def BitRev(x):
 
 
 def PolyBitRev(s):
+    if False:
+        return s
     return [s[BitRev(i)] for i in range(n)]
 
 
@@ -87,13 +90,15 @@ def _slowNTTinv(vec_hat):
 
 
 def NTT(vec):
+    if FAST:
+        return sympy.ntt([(_ * pow(gamma, j, q)) % q for j, _ in enumerate(vec)], prime=q)
     return _slowNTT(vec)
-    #return sympy.ntt(vec, prime=q)
 
 
 def NTTinv(vec_hat):
+    if FAST:
+        return [(_ * pow(gamma, -i, q)) % q for i, _ in enumerate(sympy.intt(vec_hat, prime=q))]
     return _slowNTTinv(vec_hat)
-    #return sympy.intt(vec_hat, prime=q)
 
 
 def EncodePolynomial(s_hat):
