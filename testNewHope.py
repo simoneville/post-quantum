@@ -111,3 +111,25 @@ class TestEncoding(unittest.TestCase):
         h = newHope.Compress(vp)
         self.assertLessEqual(
             max([abs(newHope.minabsmod(a - b)) for (a, b) in zip(vp, newHope.Decompress(h))]), newHope.q//4)
+
+
+class TestFull(unittest.TestCase):
+    def test_cca_encdec(self):
+        pk, sk_bar = newHope.newhope_cca_kem_keygen()
+        c_bar, ss = newHope.newhope_cca_kem_encaps(pk)
+        ssp = newHope.newhope_cca_kem_decaps(c_bar, sk_bar)
+        self.assertEqual(ss, ssp)
+
+    def test_cpa_encdec(self):
+        pk, sk = newHope.newhope_cpa_kem_keygen()
+        c, ss = newHope.newhope_cpa_kem_encaps(pk)
+        ssp = newHope.newhope_cpa_kem_decaps(c, sk)
+        self.assertEqual(ss, ssp)
+
+    def test_pke_encdec(self):
+        mu = bytes(range(32))
+        coin = b"9876543210"
+        pk, sk = newHope.newhope_cpa_pke_keygen()
+        c = newHope.newhope_cpa_pke_encryption(pk, mu, coin)
+        mup = newHope.newhope_cpa_pke_decryption(c, sk)
+        self.assertEqual(mu, mup)
