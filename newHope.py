@@ -17,15 +17,15 @@ def minabsmod(a, q=q):
     return ((a + q//2) % q) - q//2
 
 
-def shake256(length, input):
+def shake256(length, instr):
     """my editor gives error because the type is only conditionally defined"""
-    state = shake_256(input)
+    state = shake_256(instr)
     return state.digest(length)
 
 
-def shake128Absorb(input):
+def shake128Absorb(instr):
     """I guessed what this does..."""
-    state = shake_128(input)
+    state = shake_128(instr)
     return state
 
 
@@ -90,12 +90,16 @@ def _slowNTTinv(vec_hat):
 
 
 def NTT(vec):
+    """perform a number theoretic transform in the ring
+    Z[X]/<q, X^n+1>"""
     if FAST:
         return sympy.ntt([(_ * pow(gamma, j, q)) % q for j, _ in enumerate(vec)], prime=q)
     return _slowNTT(vec)
 
 
 def NTTinv(vec_hat):
+    """perform an inverse number theoretic transform in the ring
+    Z[X]/<q, X^n+1>"""
     if FAST:
         return [(_ * pow(gamma, -i, q)) % q for i, _ in enumerate(sympy.intt(vec_hat, prime=q))]
     return _slowNTTinv(vec_hat)
